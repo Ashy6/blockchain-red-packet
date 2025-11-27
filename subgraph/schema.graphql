@@ -1,0 +1,77 @@
+type RedPacket @entity {
+  id: ID!
+  packetId: BigInt!
+  creator: Bytes!
+  packetType: PacketType!
+  totalAmount: BigInt!
+  totalCount: BigInt!
+  remainingAmount: BigInt!
+  remainingCount: BigInt!
+  deadline: BigInt!
+  status: Status!
+  claimers: [Claimer!]! @derivedFrom(field: "redPacket")
+  createdAt: BigInt!
+  completedAt: BigInt
+}
+
+type Claimer @entity {
+  id: ID!
+  redPacket: RedPacket!
+  claimer: Bytes!
+  amount: BigInt!
+  claimedAt: BigInt!
+}
+
+type Collection @entity {
+  id: ID!
+  collectionId: BigInt!
+  creator: Bytes!
+  collectionType: CollectionType!
+  targetAmount: BigInt!
+  targetCount: BigInt!
+  currentAmount: BigInt!
+  currentCount: BigInt!
+  deadline: BigInt!
+  status: Status!
+  contributors: [Contributor!]! @derivedFrom(field: "collection")
+  createdAt: BigInt!
+  completedAt: BigInt
+}
+
+type Contributor @entity {
+  id: ID!
+  collection: Collection!
+  contributor: Bytes!
+  amount: BigInt!
+  paidAt: BigInt!
+  refunded: Boolean!
+}
+
+type User @entity {
+  id: ID!
+  address: Bytes!
+  sentRedPackets: [RedPacket!]!
+  claimedRedPackets: [Claimer!]! @derivedFrom(field: "claimer")
+  createdCollections: [Collection!]!
+  paidCollections: [Contributor!]! @derivedFrom(field: "contributor")
+  totalSentAmount: BigInt!
+  totalClaimedAmount: BigInt!
+  totalCollectedAmount: BigInt!
+  totalPaidAmount: BigInt!
+}
+
+enum PacketType {
+  EQUAL
+  RANDOM
+}
+
+enum CollectionType {
+  AA
+  CROWDFUND
+}
+
+enum Status {
+  ACTIVE
+  EXPIRED
+  COMPLETED
+}
