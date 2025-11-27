@@ -1,5 +1,6 @@
-// 合约地址（部署后需要更新）
-export const RED_PACKET_ADDRESS = '0x5FbDB2315678afecb367f032d93F642f64180aa3' as `0x${string}`;
+// 合约地址 - Sepolia 测试网
+// 验证地址：https://eth-sepolia.blockscout.com/address/0x36dd80B169E4C21Aa0E27DD266b5B3a5555806Ea
+export const RED_PACKET_ADDRESS = '0x36dd80B169E4C21Aa0E27DD266b5B3a5555806Ea' as `0x${string}`;
 
 // 合约 ABI
 export const RED_PACKET_ABI = [

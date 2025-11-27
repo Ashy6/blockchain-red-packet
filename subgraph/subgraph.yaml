@@ -4,11 +4,11 @@ schema:
 dataSources:
   - kind: ethereum
     name: RedPacket
-    network: localhost
+    network: sepolia
     source:
-      address: "YOUR_CONTRACT_ADDRESS_HERE"
+      address: "0x36dd80B169E4C21Aa0E27DD266b5B3a5555806Ea"
       abi: RedPacket
-      startBlock: 0
+      startBlock: 7472000
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
