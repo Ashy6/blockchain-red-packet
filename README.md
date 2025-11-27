@@ -5,6 +5,7 @@
 ## ✨ 功能特性
 
 ### 红包功能
+
 - 🎁 **等额红包** - 金额平均分配
 - 🎲 **随机红包** - 金额随机分配
 - 🔐 **口令保护** - 通过口令验证领取权限
@@ -12,12 +13,14 @@
 - 💰 **过期退款** - 超时自动退回发起者
 
 ### 收款功能
+
 - 👥 **AA收款** - 固定金额，未满额也转账
 - 📈 **众筹收款** - 任意金额，未达标自动退款
 - 📊 **实时进度** - 随时查看收款进度
 - ⚡ **自动结算** - 达成目标自动转账
 
 ### 界面特性
+
 - 🎨 **优雅设计** - 现代化 UI，动画流畅
 - 📱 **响应式布局** - 完美适配各种设备
 - 🔗 **钱包集成** - 支持多种钱包连接
@@ -67,8 +70,9 @@ npm run deploy
 ### 5. 配置前端
 
 部署完成后，更新前端配置：
+
 - 复制合约地址到 `frontend/src/constants/contracts.ts`
-- 在 https://cloud.walletconnect.com/ 注册获取项目ID
+- 在 <https://cloud.walletconnect.com/> 注册获取项目ID
 - 更新 `frontend/src/utils/wagmi.ts` 中的 projectId
 
 ### 6. 启动前端
@@ -78,7 +82,7 @@ cd frontend
 npm run dev
 ```
 
-访问 http://localhost:3000 开始使用！
+访问 <http://localhost:3000> 开始使用！
 
 ## 📁 项目结构
 
@@ -112,12 +116,14 @@ blockchain-red-packet/
 ## 🛠 技术栈
 
 ### 智能合约
+
 - **Solidity ^0.8.20** - 合约语言
 - **Hardhat** - 开发框架
 - **Ethers.js** - 以太坊库
 - **OpenZeppelin** - 安全合约库
 
 ### 前端
+
 - **Next.js 14** - React 框架
 - **TypeScript** - 类型安全
 - **Wagmi** - 以太坊 React Hooks
@@ -126,6 +132,7 @@ blockchain-red-packet/
 - **Framer Motion** - 动画库
 
 ### 数据层
+
 - **The Graph** - 区块链数据索引
 - **GraphQL** - 数据查询语言
 

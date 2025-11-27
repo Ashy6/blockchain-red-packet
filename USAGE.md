@@ -7,6 +7,7 @@
 ## 功能特性
 
 ### 1. 红包功能
+
 - ✅ **等额红包**：红包金额平均分配给每个领取者
 - ✅ **随机红包**：红包金额随机分配
 - ✅ **口令保护**：通过口令验证领取权限
@@ -14,12 +15,14 @@
 - ✅ **过期退款**：超时未领完的红包可退回发起者
 
 ### 2. 收款功能
+
 - ✅ **AA收款**：每个人支付固定金额，未收满也转给发起者
 - ✅ **众筹收款**：支持任意金额，未达标自动退款
 - ✅ **实时进度**：可查看当前收款进度
 - ✅ **自动结算**：达到目标自动转账给发起者
 
 ### 3. 记录查询
+
 - ✅ **发送记录**：查看所有发出的红包和收款
 - ✅ **领取记录**：查看所有领取的红包和支付的收款
 - ✅ **实时状态**：显示每笔交易的最新状态
@@ -62,6 +65,7 @@ npm run deploy
 ```
 
 部署完成后，将合约地址更新到：
+
 - `frontend/src/constants/contracts.ts` 中的 `RED_PACKET_ADDRESS`
 - `subgraph/subgraph.yaml` 中的合约地址
 
@@ -90,7 +94,7 @@ cd frontend
 npm run dev
 ```
 
-前端将在 http://localhost:3000 启动
+前端将在 <http://localhost:3000> 启动
 
 ## 使用教程
 
@@ -137,7 +141,9 @@ npm run dev
 ### 红包相关
 
 #### createRedPacket
+
 创建红包
+
 ```solidity
 function createRedPacket(
     PacketType _packetType,  // 0=等额, 1=随机
@@ -148,7 +154,9 @@ function createRedPacket(
 ```
 
 #### claimRedPacket
+
 领取红包
+
 ```solidity
 function claimRedPacket(
     uint256 _packetId,      // 红包ID
@@ -157,7 +165,9 @@ function claimRedPacket(
 ```
 
 #### refundExpiredRedPacket
+
 退款过期红包
+
 ```solidity
 function refundExpiredRedPacket(
     uint256 _packetId  // 红包ID
@@ -167,7 +177,9 @@ function refundExpiredRedPacket(
 ### 收款相关
 
 #### createCollection
+
 创建收款
+
 ```solidity
 function createCollection(
     CollectionType _collectionType,  // 0=AA, 1=众筹
@@ -179,7 +191,9 @@ function createCollection(
 ```
 
 #### payCollection
+
 参与收款
+
 ```solidity
 function payCollection(
     uint256 _collectionId,   // 收款ID
@@ -188,7 +202,9 @@ function payCollection(
 ```
 
 #### handleExpiredCollection
+
 处理过期收款
+
 ```solidity
 function handleExpiredCollection(
     uint256 _collectionId  // 收款ID
@@ -198,7 +214,9 @@ function handleExpiredCollection(
 ### 查询相关
 
 #### getRedPacketInfo
+
 获取红包信息
+
 ```solidity
 function getRedPacketInfo(uint256 _packetId)
     external view returns (
@@ -215,7 +233,9 @@ function getRedPacketInfo(uint256 _packetId)
 ```
 
 #### getCollectionInfo
+
 获取收款信息
+
 ```solidity
 function getCollectionInfo(uint256 _collectionId)
     external view returns (
@@ -241,7 +261,7 @@ function getCollectionInfo(uint256 _collectionId)
 
 2. **WalletConnect 项目ID**
    - 文件：`frontend/src/utils/wagmi.ts`
-   - 在 https://cloud.walletconnect.com/ 注册并获取项目ID
+   - 在 <https://cloud.walletconnect.com/> 注册并获取项目ID
    - 修改 `projectId` 为你的项目ID
 
 3. **网络配置**
@@ -285,21 +305,25 @@ function getCollectionInfo(uint256 _collectionId)
 ## 故障排除
 
 ### 合约部署失败
+
 - 检查网络连接
 - 确认钱包余额充足
 - 验证 hardhat.config.js 配置
 
 ### 前端无法连接钱包
+
 - 检查 WalletConnect 项目ID
 - 确认浏览器已安装钱包插件
 - 尝试切换到支持的网络
 
 ### 交易失败
+
 - 检查 gas 费用设置
 - 确认合约地址正确
 - 查看合约错误信息
 
 ### The Graph 同步问题
+
 - 检查 Graph Node 是否运行
 - 验证合约地址和 ABI 是否匹配
 - 查看子图日志
@@ -326,6 +350,7 @@ function getCollectionInfo(uint256 _collectionId)
 ### 测试流程
 
 1. **单元测试**
+
    ```bash
    npm run test
    ```
