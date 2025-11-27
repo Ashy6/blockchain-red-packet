@@ -1,0 +1,40 @@
+specVersion: 0.0.5
+schema:
+  file: ./schema.graphql
+dataSources:
+  - kind: ethereum
+    name: RedPacket
+    network: localhost
+    source:
+      address: "YOUR_CONTRACT_ADDRESS_HERE"
+      abi: RedPacket
+      startBlock: 0
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - RedPacket
+        - Claimer
+        - Collection
+        - Contributor
+        - User
+      abis:
+        - name: RedPacket
+          file: ../artifacts/contracts/RedPacket.sol/RedPacket.json
+      eventHandlers:
+        - event: RedPacketCreated(indexed uint256,indexed address,uint8,uint256,uint256,uint256)
+          handler: handleRedPacketCreated
+        - event: RedPacketClaimed(indexed uint256,indexed address,uint256)
+          handler: handleRedPacketClaimed
+        - event: RedPacketRefunded(indexed uint256,indexed address,uint256)
+          handler: handleRedPacketRefunded
+        - event: CollectionCreated(indexed uint256,indexed address,uint8,uint256,uint256)
+          handler: handleCollectionCreated
+        - event: CollectionPaid(indexed uint256,indexed address,uint256)
+          handler: handleCollectionPaid
+        - event: CollectionCompleted(indexed uint256,indexed address,uint256)
+          handler: handleCollectionCompleted
+        - event: CollectionRefunded(indexed uint256,indexed address,uint256)
+          handler: handleCollectionRefunded
+      file: ./src/mapping.ts
