@@ -1,0 +1,16 @@
+{
+  "network": "sepolia",
+  "chainId": 11155111,
+  "contractAddress": "0x36dd80B169E4C21Aa0E27DD266b5B3a5555806Ea",
+  "deployTime": "2025-11-27",
+  "verified": true,
+  "verificationLinks": {
+    "sourcify": "https://repo.sourcify.dev/11155111/0x36dd80B169E4C21Aa0E27DD266b5B3a5555806Ea/",
+    "blockscout": "https://eth-sepolia.blockscout.com/address/0x36dd80B169E4C21Aa0E27DD266b5B3a5555806Ea?tab=contract",
+    "routescan": "https://testnet.routescan.io/address/0x36dd80B169E4C21Aa0E27DD266b5B3a5555806Ea/contract/11155111/code"
+  },
+  "explorer": "https://sepolia.etherscan.io/address/0x36dd80B169E4C21Aa0E27DD266b5B3a5555806Ea",
+  "rpcUrl": "https://sepolia.infura.io/v3/YOUR_INFURA_KEY",
+  "contractName": "RedPacket",
+  "compiler": "Solidity 0.8.20"
+}

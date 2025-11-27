@@ -4,6 +4,8 @@ import Header from '@/components/Header';
 import SendRedPacket from '@/components/SendRedPacket';
 import ClaimRedPacket from '@/components/ClaimRedPacket';
 import RecordsList from '@/components/RecordsList';
+import NetworkStatus from '@/components/NetworkStatus';
+import ContractInfo from '@/components/ContractInfo';
 import { motion } from 'framer-motion';
 
 type TabType = 'send' | 'claim';
@@ -22,6 +24,9 @@ export default function Home() {
 
       <div className="min-h-screen">
         <Header />
+
+        {/* 网络状态提示 */}
+        <NetworkStatus />
 
         <main className="container mx-auto px-4 py-8">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -68,9 +73,10 @@ export default function Home() {
               </motion.div>
             </div>
 
-            {/* 右侧：记录列表 */}
-            <div className="lg:col-span-1">
+            {/* 右侧：记录列表和合约信息 */}
+            <div className="lg:col-span-1 space-y-6">
               <RecordsList />
+              <ContractInfo />
             </div>
           </div>
         </main>
