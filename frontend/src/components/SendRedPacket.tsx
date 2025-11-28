@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAccount, useContractWrite, useWaitForTransactionReceipt, useChainId, useSwitchChain } from 'wagmi';
 import { parseEther } from 'viem';
 import { RED_PACKET_ADDRESS, RED_PACKET_ABI } from '@/constants/contracts';
@@ -28,10 +28,45 @@ export default function SendRedPacket() {
   const [targetAmount, setTargetAmount] = useState('');
   const [targetCount, setTargetCount] = useState('');
 
-  const { write, data: hash, isPending } = useContractWrite();
+  // 超时状态
+  const [isTimeout, setIsTimeout] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const { write, data: hash, isPending, reset } = useContractWrite();
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
     hash,
   });
+
+  // 监听 loading 状态，设置10秒超时
+  useEffect(() => {
+    if (isPending || isConfirming) {
+      // 清除之前的定时器
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+
+      // 设置10秒超时
+      timeoutRef.current = setTimeout(() => {
+        setIsTimeout(true);
+        setErrorMessage('交易超时，请检查网络连接或稍后重试');
+        reset(); // 重置交易状态
+      }, 10000);
+    } else {
+      // 清除定时器
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
+      setIsTimeout(false);
+    }
+
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, [isPending, isConfirming, reset]);
 
   const handleCreateRedPacket = async (e: React.FormEvent) => {
     e.preventDefault();
