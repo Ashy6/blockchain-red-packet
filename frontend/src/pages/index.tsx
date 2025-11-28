@@ -11,6 +11,7 @@ const ClaimPacketClient = dynamic(() => import('@/components/ClaimPacket').then(
 const CreateCollectionClient = dynamic(() => import('@/components/CreateCollection'), { ssr: false }); // 创建收款
 const PayCollectionClient = dynamic(() => import('@/components/PayCollection'), { ssr: false });  // 收款
 const RecordsListClient = dynamic(() => import('@/components/RecordsList'), { ssr: false }); // 记录列表
+const RedPacketPoolClient = dynamic(() => import('@/components/RedPacketPool'), { ssr: false }); // 红包池
 
 enum TabType {
   SendPacket = 'sendPacket',  // 发红包
@@ -50,6 +51,7 @@ export default function Home() {
                 {/* Tab 切换 */}
                 <div className="flex border-b border-gray-200">
                   <button
+                    data-tab="sendPacket"
                     onClick={() => setActiveTab(TabType.SendPacket)}
                     className={`flex-1 px-6 py-4 text-lg font-semibold transition-all ${
                       activeTab === TabType.SendPacket
@@ -60,6 +62,7 @@ export default function Home() {
                     🧧 发红包
                   </button>
                   <button
+                    data-tab="claimPacket"
                     onClick={() => setActiveTab(TabType.ClaimPacket)}
                     className={`flex-1 px-6 py-4 text-lg font-semibold transition-all ${
                       activeTab === TabType.ClaimPacket
@@ -70,6 +73,7 @@ export default function Home() {
                     🎁 抢红包
                   </button>
                   <button
+                    data-tab="collection"
                     onClick={() => setActiveTab(TabType.Collection)}
                     className={`flex-1 px-6 py-4 text-lg font-semibold transition-all ${
                       activeTab === TabType.Collection
@@ -80,6 +84,7 @@ export default function Home() {
                     🧾 收款
                   </button>
                   <button
+                    data-tab="remittance"
                     onClick={() => setActiveTab(TabType.Remittance)}
                     className={`flex-1 px-6 py-4 text-lg font-semibold transition-all ${
                       activeTab === TabType.Remittance
@@ -99,8 +104,16 @@ export default function Home() {
                   {activeTab === TabType.Remittance && <PayCollectionClient />}
                 </div>
               </motion.div>
-              {/* todo：在此处开发一个红包池功能，每位用户发出的红包都可以进入红包池中，其他用户可以从红包池中随机领取红包，增加互动性和趣味性。 */}
-              {/* 众筹也会进入红包池中进行展示，在颜色上做区分 */}
+
+              {/* 红包池 */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.1 }}
+                className="mt-6 bg-white rounded-2xl shadow-2xl overflow-hidden p-6"
+              >
+                <RedPacketPoolClient />
+              </motion.div>
             </div>
 
             {/* 右侧：记录列表和合约信息 */}
