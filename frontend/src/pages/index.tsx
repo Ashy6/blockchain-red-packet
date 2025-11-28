@@ -99,6 +99,8 @@ export default function Home() {
                   {activeTab === TabType.Remittance && <PayCollectionClient />}
                 </div>
               </motion.div>
+              {/* todo：在此处开发一个红包池功能，每位用户发出的红包都可以进入红包池中，其他用户可以从红包池中随机领取红包，增加互动性和趣味性。 */}
+              {/* 众筹也会进入红包池中进行展示，在颜色上做区分 */}
             </div>
 
             {/* 右侧：记录列表和合约信息 */}

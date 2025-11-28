@@ -27,6 +27,12 @@ export default function RecordsList() {
     amount: string;
   } | null>(null);
 
+  const [recentPaid, setRecentPaid] = useState<{
+    collectionId: bigint;
+    contributor: string;
+    amount: string;
+  } | null>(null);
+
   // 监听红包创建事件
   useEffect(() => {
     const handler = (e: Event) => {
@@ -104,7 +110,7 @@ export default function RecordsList() {
   });
 
   // 查询用户参与的收款
-  const { data: paidCollections } = useContractRead({
+  const { data: paidCollections, refetch: refetchPaid } = useContractRead({
     address: RED_PACKET_ADDRESS,
     abi: RED_PACKET_ABI,
     functionName: 'getUserPaidCollections',
@@ -113,6 +119,29 @@ export default function RecordsList() {
       enabled: isConnected && !!address && recordType === 'claimed',
     },
   });
+
+  // 监听收款支付事件
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const ce = e as CustomEvent<{
+        collectionId: bigint;
+        contributor: string;
+        amount: string;
+      }>;
+      if (ce.detail) {
+        setRecentPaid(ce.detail);
+        setRecordType('claimed');
+        // 刷新支付记录
+        setTimeout(() => {
+          refetchPaid();
+        }, 1000);
+        // 5秒后清除高亮
+        setTimeout(() => setRecentPaid(null), 5000);
+      }
+    };
+    window.addEventListener('collectionPaid', handler as EventListener);
+    return () => window.removeEventListener('collectionPaid', handler as EventListener);
+  }, [refetchPaid]);
 
   const renderRecords = () => {
     if (!isConnected) {
@@ -199,7 +228,7 @@ export default function RecordsList() {
       const redPacketCount = claimedRedPackets?.length || 0;
       const collectionCount = paidCollections?.length || 0;
 
-      if (redPacketCount === 0 && collectionCount === 0 && !recentClaimed) {
+      if (redPacketCount === 0 && collectionCount === 0 && !recentClaimed && !recentPaid) {
         return (
           <div className="text-center py-12 text-gray-500">
             <ArrowDownRight className="w-12 h-12 mx-auto mb-2 opacity-50" />
@@ -232,6 +261,37 @@ export default function RecordsList() {
                 <div className="text-right">
                   <div className="text-lg font-bold text-orange-600">
                     + {Number(recentClaimed.amount).toFixed(4)} ETH
+                  </div>
+                  <div className="text-xs text-gray-500 mt-1">
+                    刚刚
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* 最近支付的收款高亮显示 */}
+          {recentPaid && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-lg p-4 border-2 border-blue-300 shadow-lg"
+            >
+              <div className="flex items-start justify-between mb-2">
+                <div className="flex items-center space-x-2">
+                  <div className="text-3xl animate-bounce">💰</div>
+                  <div>
+                    <div className="font-bold text-gray-800 text-lg">
+                      支付成功！
+                    </div>
+                    <div className="text-sm text-gray-600 mt-1">
+                      收款 #{recentPaid.collectionId.toString()}
+                    </div>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-lg font-bold text-blue-600">
+                    - {Number(recentPaid.amount).toFixed(4)} ETH
                   </div>
                   <div className="text-xs text-gray-500 mt-1">
                     刚刚
