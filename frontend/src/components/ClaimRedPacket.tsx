@@ -34,7 +34,7 @@ export default function ClaimRedPacket() {
     abi: RED_PACKET_ABI,
     functionName: 'getRedPacketInfo',
     args: id ? [BigInt(id)] : undefined,
-    enabled: mode === 'redpacket' && !!id,
+    query: { enabled: mode === 'redpacket' && !!id },
   });
 
   // 查询收款信息
@@ -43,7 +43,7 @@ export default function ClaimRedPacket() {
     abi: RED_PACKET_ABI,
     functionName: 'getCollectionInfo',
     args: id ? [BigInt(id)] : undefined,
-    enabled: mode === 'collection' && !!id,
+    query: { enabled: mode === 'collection' && !!id },
   });
 
   // 监听 loading 状态，设置10秒超时

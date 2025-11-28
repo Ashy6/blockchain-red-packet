@@ -70,6 +70,13 @@ describe("RedPacket Contract", function () {
           redPacket.createRedPacket(0, totalCount, duration, "", { value: totalAmount })
         ).to.be.revertedWith("Password cannot be empty");
       });
+
+      it("创建后应记录在用户发送列表", async function () {
+        await redPacket.createRedPacket(0, totalCount, duration, password, { value: totalAmount });
+        const sent = await redPacket.getUserSentRedPackets(owner.address);
+        expect(sent.length).to.equal(1);
+        expect(sent[0]).to.equal(0n);
+      });
     });
 
     describe("领取红包", function () {
@@ -314,7 +321,8 @@ describe("RedPacket Contract", function () {
 
         const balanceBefore = await ethers.provider.getBalance(owner.address);
 
-        await redPacket.handleExpiredCollection(0);
+        // 使用其他地址触发过期处理，避免创建者因交易气费影响余额断言
+        await redPacket.connect(addr2).handleExpiredCollection(0);
 
         const balanceAfter = await ethers.provider.getBalance(owner.address);
 
