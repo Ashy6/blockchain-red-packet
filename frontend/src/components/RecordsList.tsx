@@ -21,6 +21,13 @@ export default function RecordsList() {
     packetType: 'equal' | 'random';
   } | null>(null);
 
+  const [recentClaimed, setRecentClaimed] = useState<{
+    packetId: bigint;
+    claimer: string;
+    amount: string;
+  } | null>(null);
+
+  // 监听红包创建事件
   useEffect(() => {
     const handler = (e: Event) => {
       const ce = e as CustomEvent<{
@@ -41,7 +48,7 @@ export default function RecordsList() {
   }, []);
 
   // 查询用户发送的红包
-  const { data: sentRedPackets } = useContractRead({
+  const { data: sentRedPackets, refetch: refetchSent } = useContractRead({
     address: RED_PACKET_ADDRESS,
     abi: RED_PACKET_ABI,
     functionName: 'getUserSentRedPackets',
@@ -52,7 +59,7 @@ export default function RecordsList() {
   });
 
   // 查询用户领取的红包
-  const { data: claimedRedPackets } = useContractRead({
+  const { data: claimedRedPackets, refetch: refetchClaimed } = useContractRead({
     address: RED_PACKET_ADDRESS,
     abi: RED_PACKET_ABI,
     functionName: 'getUserClaimedRedPackets',
@@ -61,6 +68,29 @@ export default function RecordsList() {
       enabled: isConnected && !!address && recordType === 'claimed',
     },
   });
+
+  // 监听红包领取事件
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const ce = e as CustomEvent<{
+        packetId: bigint;
+        claimer: string;
+        amount: string;
+      }>;
+      if (ce.detail) {
+        setRecentClaimed(ce.detail);
+        setRecordType('claimed');
+        // 刷新领取记录
+        setTimeout(() => {
+          refetchClaimed();
+        }, 1000);
+        // 5秒后清除高亮
+        setTimeout(() => setRecentClaimed(null), 5000);
+      }
+    };
+    window.addEventListener('redPacketClaimed', handler as EventListener);
+    return () => window.removeEventListener('redPacketClaimed', handler as EventListener);
+  }, [refetchClaimed]);
 
   // 查询用户创建的收款
   const { data: createdCollections } = useContractRead({
@@ -169,7 +199,7 @@ export default function RecordsList() {
       const redPacketCount = claimedRedPackets?.length || 0;
       const collectionCount = paidCollections?.length || 0;
 
-      if (redPacketCount === 0 && collectionCount === 0) {
+      if (redPacketCount === 0 && collectionCount === 0 && !recentClaimed) {
         return (
           <div className="text-center py-12 text-gray-500">
             <ArrowDownRight className="w-12 h-12 mx-auto mb-2 opacity-50" />
@@ -180,6 +210,37 @@ export default function RecordsList() {
 
       return (
         <div className="space-y-3">
+          {/* 最近领取的红包高亮显示 */}
+          {recentClaimed && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-lg p-4 border-2 border-yellow-300 shadow-lg"
+            >
+              <div className="flex items-start justify-between mb-2">
+                <div className="flex items-center space-x-2">
+                  <div className="text-3xl animate-bounce">🎉</div>
+                  <div>
+                    <div className="font-bold text-gray-800 text-lg">
+                      领取成功！
+                    </div>
+                    <div className="text-sm text-gray-600 mt-1">
+                      红包 #{recentClaimed.packetId.toString()}
+                    </div>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-lg font-bold text-orange-600">
+                    + {Number(recentClaimed.amount).toFixed(4)} ETH
+                  </div>
+                  <div className="text-xs text-gray-500 mt-1">
+                    刚刚
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
           {/* 领取的红包 */}
           {claimedRedPackets?.map((packetId, index) => (
             <RedPacketRecord key={`rp-${index}`} packetId={packetId} />
