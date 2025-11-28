@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
-import { useAccount, useContractWrite, useWaitForTransactionReceipt, useChainId, useSwitchChain } from 'wagmi';
-import { parseEther } from 'viem';
+import { useAccount, useContractWrite, useWaitForTransactionReceipt, useChainId, useSwitchChain, usePublicClient } from 'wagmi';
+import { parseEther, formatEther } from 'viem';
 import { RED_PACKET_ADDRESS, RED_PACKET_ABI } from '@/constants/contracts';
-import { motion } from 'framer-motion';
-import { Gift, Shuffle, Users, DollarSign } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Gift, Shuffle, Users, DollarSign, Copy, Check } from 'lucide-react';
 
 type PacketType = 'equal' | 'random';
 type Mode = 'redpacket' | 'collection';
@@ -33,47 +33,87 @@ export default function SendRedPacket() {
   const [errorMessage, setErrorMessage] = useState('');
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const { write, data: hash, isPending, reset } = useContractWrite();
-  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
+  // 创建成功后的红包信息
+  const [createdRedPacket, setCreatedRedPacket] = useState<{
+    packetId: string;
+    password: string;
+    amount: string;
+    count: string;
+    type: PacketType;
+  } | null>(null);
+  const [copiedField, setCopiedField] = useState<string | null>(null);
+
+  const publicClient = usePublicClient();
+  const { writeContract, data: hash, isPending } = useContractWrite();
+  const { isLoading: isConfirming, isSuccess, data: receipt } = useWaitForTransactionReceipt({
     hash,
+    timeout: 60000, // 60秒超时
   });
 
-  // 监听 loading 状态，设置10秒超时
+  // 解析交易成功后的红包 ID
   useEffect(() => {
-    if (isPending || isConfirming) {
-      // 清除之前的定时器
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
+    if (isSuccess && receipt && mode === 'redpacket') {
+      try {
+        // 从交易 logs 中解析 RedPacketCreated 事件
+        const redPacketCreatedLog = receipt.logs.find(
+          (log) =>
+            log.address.toLowerCase() === RED_PACKET_ADDRESS.toLowerCase() &&
+            log.topics[0] === '0x' + Array.from(
+              new TextEncoder().encode('RedPacketCreated(uint256,address,uint8,uint256,uint256,uint256)')
+            ).map(b => b.toString(16).padStart(2, '0')).join('')
+        );
 
-      // 设置10秒超时
-      timeoutRef.current = setTimeout(() => {
-        setIsTimeout(true);
-        setErrorMessage('交易超时，请检查网络连接或稍后重试');
-        reset(); // 重置交易状态
-      }, 10000);
-    } else {
-      // 清除定时器
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-        timeoutRef.current = null;
+        if (redPacketCreatedLog && redPacketCreatedLog.topics[1]) {
+          // 解析 packetId (第一个 indexed 参数)
+          const packetId = BigInt(redPacketCreatedLog.topics[1]).toString();
+
+          // 设置创建的红包信息
+          setCreatedRedPacket({
+            packetId,
+            password,
+            amount,
+            count,
+            type: packetType,
+          });
+
+          // 触发自定义事件通知记录列表
+          window.dispatchEvent(
+            new CustomEvent('redPacketCreated', {
+              detail: {
+                packetId: BigInt(packetId),
+                password,
+                totalAmount: amount,
+                totalCount: parseInt(count),
+                remainingCount: parseInt(count),
+                packetType,
+              },
+            })
+          );
+        }
+      } catch (error) {
+        console.error('解析红包ID失败:', error);
       }
-      setIsTimeout(false);
     }
+  }, [isSuccess, receipt, mode, password, amount, count, packetType]);
 
-    return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-    };
-  }, [isPending, isConfirming, reset]);
+  // 复制到剪贴板
+  const copyToClipboard = async (text: string, field: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedField(field);
+      setTimeout(() => setCopiedField(null), 2000);
+    } catch (error) {
+      console.error('复制失败:', error);
+    }
+  };
 
   const handleCreateRedPacket = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // 清除之前的错误信息
+    // 清除之前的错误信息和成功提示
     setErrorMessage('');
     setIsTimeout(false);
+    setCreatedRedPacket(null);
 
     if (!isConnected || !address) {
       setErrorMessage('请先连接钱包');
@@ -91,7 +131,7 @@ export default function SendRedPacket() {
     }
 
     try {
-      write({
+      writeContract({
         address: RED_PACKET_ADDRESS,
         abi: RED_PACKET_ABI,
         functionName: 'createRedPacket',
@@ -137,7 +177,7 @@ export default function SendRedPacket() {
     }
 
     try {
-      write({
+      writeContract({
         address: RED_PACKET_ADDRESS,
         abi: RED_PACKET_ABI,
         functionName: 'createCollection',
@@ -155,19 +195,22 @@ export default function SendRedPacket() {
     }
   };
 
-  // 成功后清空表单
+  // 成功后延迟清空表单（给用户足够时间复制信息）
   useEffect(() => {
-    if (isSuccess) {
+    if (isSuccess && createdRedPacket) {
       setErrorMessage('');
-      setTimeout(() => {
+      // 延迟5秒清空表单，让用户有时间复制信息
+      const timer = setTimeout(() => {
         setAmount('');
         setCount('');
         setPassword('');
         setTargetAmount('');
         setTargetCount('');
-      }, 2000);
+        setCreatedRedPacket(null);
+      }, 8000);
+      return () => clearTimeout(timer);
     }
-  }, [isSuccess]);
+  }, [isSuccess, createdRedPacket]);
 
   return (
     <div className="space-y-6">
@@ -195,6 +238,100 @@ export default function SendRedPacket() {
           </div>
         </div>
       )}
+
+      {/* 成功提示 - 显示红包ID和口令 */}
+      <AnimatePresence>
+        {createdRedPacket && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-300 rounded-xl p-5 shadow-lg"
+          >
+            <div className="flex items-center space-x-2 mb-4">
+              <span className="text-3xl">🎉</span>
+              <div>
+                <h3 className="text-lg font-bold text-green-800">红包创建成功！</h3>
+                <p className="text-sm text-green-600">请分享红包ID和口令给好友</p>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              {/* 红包ID */}
+              <div className="bg-white rounded-lg p-3 border border-green-200">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <div className="text-xs text-gray-500 mb-1">红包ID</div>
+                    <div className="text-lg font-mono font-bold text-gray-800">
+                      #{createdRedPacket.packetId}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => copyToClipboard(createdRedPacket.packetId, 'id')}
+                    className="ml-2 p-2 hover:bg-green-100 rounded-lg transition-colors"
+                  >
+                    {copiedField === 'id' ? (
+                      <Check className="w-5 h-5 text-green-600" />
+                    ) : (
+                      <Copy className="w-5 h-5 text-gray-600" />
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* 红包口令 */}
+              <div className="bg-white rounded-lg p-3 border border-green-200">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <div className="text-xs text-gray-500 mb-1">红包口令</div>
+                    <div className="text-lg font-mono font-bold text-gray-800">
+                      {createdRedPacket.password}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => copyToClipboard(createdRedPacket.password, 'password')}
+                    className="ml-2 p-2 hover:bg-green-100 rounded-lg transition-colors"
+                  >
+                    {copiedField === 'password' ? (
+                      <Check className="w-5 h-5 text-green-600" />
+                    ) : (
+                      <Copy className="w-5 h-5 text-gray-600" />
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* 红包详情 */}
+              <div className="bg-white rounded-lg p-3 border border-green-200">
+                <div className="grid grid-cols-3 gap-3 text-center">
+                  <div>
+                    <div className="text-xs text-gray-500 mb-1">总金额</div>
+                    <div className="text-sm font-bold text-gray-800">
+                      {createdRedPacket.amount} ETH
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-gray-500 mb-1">红包个数</div>
+                    <div className="text-sm font-bold text-gray-800">
+                      {createdRedPacket.count} 个
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-gray-500 mb-1">类型</div>
+                    <div className="text-sm font-bold text-gray-800">
+                      {createdRedPacket.type === 'equal' ? '等额' : '随机'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="text-xs text-center text-gray-500 pt-2">
+                💡 提示：此信息将在 8 秒后自动清除
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* 模式切换 */}
       <div className="flex space-x-4">

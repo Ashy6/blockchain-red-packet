@@ -155,7 +155,7 @@ export function getRedPacketProgress(
   remaining: bigint,
   total: bigint
 ): number {
-  if (total === 0n) return 0;
+  if (total === BigInt(0)) return 0;
   const claimed = total - remaining;
   return Math.floor((Number(claimed) / Number(total)) * 100);
 }
@@ -167,7 +167,7 @@ export function getCollectionProgress(
   current: bigint,
   target: bigint
 ): number {
-  if (target === 0n) return 0;
+  if (target === BigInt(0)) return 0;
   return Math.floor((Number(current) / Number(target)) * 100);
 }
 

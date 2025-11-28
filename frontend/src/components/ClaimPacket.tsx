@@ -14,7 +14,7 @@ export default function ClaimPacket() {
   const [showSuccess, setShowSuccess] = useState(false);
   const [hasSubmitted, setHasSubmitted] = useState(false);
 
-  const { write, data: hash, isPending, reset } = useContractWrite();
+  const { writeContract, data: hash, isPending, reset } = useContractWrite();
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
 
   const { data: redPacketInfo } = useContractRead({
@@ -33,7 +33,7 @@ export default function ClaimPacket() {
     try {
       setHasSubmitted(true);
       reset();
-      write({
+      writeContract({
         address: RED_PACKET_ADDRESS,
         abi: RED_PACKET_ABI,
         functionName: 'claimRedPacket',

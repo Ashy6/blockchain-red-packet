@@ -15,7 +15,7 @@ export default function PayCollection() {
   const [amount, setAmount] = useState('');
   const [hasSubmitted, setHasSubmitted] = useState(false);
 
-  const { write, data: hash, isPending, reset } = useContractWrite();
+  const { writeContract, data: hash, isPending, reset } = useContractWrite();
   const { isLoading: isConfirming } = useWaitForTransactionReceipt({ hash });
 
   const handlePay = async (e: React.FormEvent) => {
@@ -26,7 +26,7 @@ export default function PayCollection() {
     try {
       setHasSubmitted(true);
       reset();
-      write({
+      writeContract({
         address: RED_PACKET_ADDRESS,
         abi: RED_PACKET_ABI,
         functionName: 'payCollection',

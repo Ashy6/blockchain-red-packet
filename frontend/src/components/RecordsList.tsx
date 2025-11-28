@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAccount, useContractRead, useChainId, useSwitchChain } from 'wagmi';
 import { RED_PACKET_ADDRESS, RED_PACKET_ABI } from '@/constants/contracts';
 import { motion } from 'framer-motion';
-import { ArrowUpRight, ArrowDownRight, Clock } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight, Clock, Copy, Check, ChevronDown, ChevronUp } from 'lucide-react';
 
 type RecordType = 'sent' | 'claimed';
 
@@ -246,6 +246,9 @@ function RedPacketRecord({
   packetId: bigint;
   isSent?: boolean;
 }) {
+  const [expanded, setExpanded] = useState(false);
+  const [copiedField, setCopiedField] = useState<string | null>(null);
+
   const { data: packetInfo } = useContractRead({
     address: RED_PACKET_ADDRESS,
     abi: RED_PACKET_ABI,
@@ -253,46 +256,163 @@ function RedPacketRecord({
     args: [packetId],
   });
 
+  const copyToClipboard = async (text: string, field: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedField(field);
+      setTimeout(() => setCopiedField(null), 2000);
+    } catch (error) {
+      console.error('复制失败:', error);
+    }
+  };
+
   if (!packetInfo) return null;
 
   const totalAmount = Number(packetInfo[2]) / 1e18;
+  const remainingAmount = Number(packetInfo[4]) / 1e18;
   const remainingCount = Number(packetInfo[5]);
   const totalCount = Number(packetInfo[3]);
   const packetType = packetInfo[1] === 0 ? '等额' : '随机';
   const status = packetInfo[7];
+  const claimedCount = totalCount - remainingCount;
+  const claimedAmount = totalAmount - remainingAmount;
 
   return (
     <motion.div
       initial={{ opacity: 0, x: -10 }}
       animate={{ opacity: 1, x: 0 }}
-      className="bg-gradient-to-r from-red-50 to-pink-50 rounded-lg p-4 border border-red-100 hover:shadow-md transition-shadow"
+      className="bg-gradient-to-r from-red-50 to-pink-50 rounded-lg border border-red-100 hover:shadow-md transition-all overflow-hidden"
     >
-      <div className="flex items-start justify-between mb-2">
-        <div className="flex items-center space-x-2">
-          <div className="text-2xl">🧧</div>
-          <div>
-            <div className="font-semibold text-gray-800">
-              {packetType}红包 #{packetId.toString()}
-            </div>
-            <div className="text-xs text-gray-500 flex items-center mt-1">
-              <Clock className="w-3 h-3 mr-1" />
-              {status === 0
-                ? '进行中'
-                : status === 1
-                ? '已过期'
-                : '已领完'}
+      <div
+        className="p-4 cursor-pointer"
+        onClick={() => setExpanded(!expanded)}
+      >
+        <div className="flex items-start justify-between mb-2">
+          <div className="flex items-center space-x-2">
+            <div className="text-2xl">🧧</div>
+            <div>
+              <div className="font-semibold text-gray-800">
+                {packetType}红包 #{packetId.toString()}
+              </div>
+              <div className="text-xs text-gray-500 flex items-center mt-1">
+                <Clock className="w-3 h-3 mr-1" />
+                {status === 0
+                  ? '进行中'
+                  : status === 1
+                  ? '已过期'
+                  : '已领完'}
+              </div>
             </div>
           </div>
-        </div>
-        <div className="text-right">
-          <div className="text-sm font-medium text-red-600">
-            {isSent ? '-' : '+'} {totalAmount.toFixed(4)} ETH
-          </div>
-          <div className="text-xs text-gray-500">
-            {totalCount - remainingCount}/{totalCount}
+          <div className="flex items-center space-x-2">
+            <div className="text-right">
+              <div className="text-sm font-medium text-red-600">
+                {isSent ? '-' : '+'} {totalAmount.toFixed(4)} ETH
+              </div>
+              <div className="text-xs text-gray-500">
+                {claimedCount}/{totalCount} 已领
+              </div>
+            </div>
+            {expanded ? (
+              <ChevronUp className="w-4 h-4 text-gray-400" />
+            ) : (
+              <ChevronDown className="w-4 h-4 text-gray-400" />
+            )}
           </div>
         </div>
       </div>
+
+      {/* 展开的详细信息 */}
+      {expanded && (
+        <motion.div
+          initial={{ height: 0, opacity: 0 }}
+          animate={{ height: 'auto', opacity: 1 }}
+          exit={{ height: 0, opacity: 0 }}
+          className="border-t border-red-200 bg-white px-4 py-3"
+        >
+          <div className="space-y-3">
+            {/* 红包ID - 可复制 */}
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-gray-600">红包ID:</span>
+              <div className="flex items-center space-x-2">
+                <span className="font-mono font-medium text-gray-800">
+                  #{packetId.toString()}
+                </span>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    copyToClipboard(packetId.toString(), 'id');
+                  }}
+                  className="p-1 hover:bg-gray-100 rounded transition-colors"
+                >
+                  {copiedField === 'id' ? (
+                    <Check className="w-3 h-3 text-green-600" />
+                  ) : (
+                    <Copy className="w-3 h-3 text-gray-400" />
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* 金额统计 */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-red-50 rounded-lg p-2">
+                <div className="text-xs text-gray-500">总金额</div>
+                <div className="text-sm font-bold text-gray-800">
+                  {totalAmount.toFixed(4)} ETH
+                </div>
+              </div>
+              <div className="bg-red-50 rounded-lg p-2">
+                <div className="text-xs text-gray-500">已领取</div>
+                <div className="text-sm font-bold text-gray-800">
+                  {claimedAmount.toFixed(4)} ETH
+                </div>
+              </div>
+              <div className="bg-red-50 rounded-lg p-2">
+                <div className="text-xs text-gray-500">剩余金额</div>
+                <div className="text-sm font-bold text-gray-800">
+                  {remainingAmount.toFixed(4)} ETH
+                </div>
+              </div>
+              <div className="bg-red-50 rounded-lg p-2">
+                <div className="text-xs text-gray-500">剩余个数</div>
+                <div className="text-sm font-bold text-gray-800">
+                  {remainingCount} / {totalCount}
+                </div>
+              </div>
+            </div>
+
+            {/* 红包类型 */}
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-gray-600">红包类型:</span>
+              <span className="font-medium text-gray-800">
+                {packetType}
+                {packetType === '等额' && totalCount > 0 && (
+                  <span className="text-xs text-gray-500 ml-1">
+                    (每个 {(totalAmount / totalCount).toFixed(4)} ETH)
+                  </span>
+                )}
+              </span>
+            </div>
+
+            {/* 状态 */}
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-gray-600">状态:</span>
+              <span
+                className={`font-medium px-2 py-1 rounded-full text-xs ${
+                  status === 0
+                    ? 'bg-green-100 text-green-700'
+                    : status === 1
+                    ? 'bg-gray-100 text-gray-700'
+                    : 'bg-blue-100 text-blue-700'
+                }`}
+              >
+                {status === 0 ? '🟢 进行中' : status === 1 ? '⏰ 已过期' : '✅ 已领完'}
+              </span>
+            </div>
+          </div>
+        </motion.div>
+      )}
     </motion.div>
   );
 }

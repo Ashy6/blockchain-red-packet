@@ -10,7 +10,7 @@ import { getFriendlyErrorMessage } from '@/utils/helpers';
 export function useRedPacket() {
   const [error, setError] = useState<string | null>(null);
 
-  const { write, data: hash, isPending } = useContractWrite();
+  const { writeContract, data: hash, isPending } = useContractWrite();
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
     hash,
   });
@@ -28,7 +28,7 @@ export function useRedPacket() {
     ) => {
       setError(null);
       try {
-        write({
+        writeContract({
           address: RED_PACKET_ADDRESS,
           abi: RED_PACKET_ABI,
           functionName: 'createRedPacket',
@@ -41,7 +41,7 @@ export function useRedPacket() {
         throw new Error(message);
       }
     },
-    [write]
+    [writeContract]
   );
 
   /**
@@ -51,7 +51,7 @@ export function useRedPacket() {
     async (packetId: bigint, password: string) => {
       setError(null);
       try {
-        write({
+        writeContract({
           address: RED_PACKET_ADDRESS,
           abi: RED_PACKET_ABI,
           functionName: 'claimRedPacket',
@@ -63,7 +63,7 @@ export function useRedPacket() {
         throw new Error(message);
       }
     },
-    [write]
+    [writeContract]
   );
 
   /**
@@ -73,7 +73,7 @@ export function useRedPacket() {
     async (packetId: bigint) => {
       setError(null);
       try {
-        write({
+        writeContract({
           address: RED_PACKET_ADDRESS,
           abi: RED_PACKET_ABI,
           functionName: 'refundExpiredRedPacket',
@@ -85,7 +85,7 @@ export function useRedPacket() {
         throw new Error(message);
       }
     },
-    [write]
+    [writeContract]
   );
 
   return {
@@ -106,7 +106,7 @@ export function useRedPacket() {
 export function useCollection() {
   const [error, setError] = useState<string | null>(null);
 
-  const { write, data: hash, isPending } = useContractWrite();
+  const { writeContract, data: hash, isPending } = useContractWrite();
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
     hash,
   });
@@ -124,7 +124,7 @@ export function useCollection() {
     ) => {
       setError(null);
       try {
-        write({
+        writeContract({
           address: RED_PACKET_ADDRESS,
           abi: RED_PACKET_ABI,
           functionName: 'createCollection',
@@ -142,7 +142,7 @@ export function useCollection() {
         throw new Error(message);
       }
     },
-    [write]
+    [writeContract]
   );
 
   /**
@@ -152,7 +152,7 @@ export function useCollection() {
     async (collectionId: bigint, password: string, amount: string) => {
       setError(null);
       try {
-        write({
+        writeContract({
           address: RED_PACKET_ADDRESS,
           abi: RED_PACKET_ABI,
           functionName: 'payCollection',
@@ -165,7 +165,7 @@ export function useCollection() {
         throw new Error(message);
       }
     },
-    [write]
+    [writeContract]
   );
 
   /**
@@ -175,7 +175,7 @@ export function useCollection() {
     async (collectionId: bigint) => {
       setError(null);
       try {
-        write({
+        writeContract({
           address: RED_PACKET_ADDRESS,
           abi: RED_PACKET_ABI,
           functionName: 'handleExpiredCollection',
@@ -187,7 +187,7 @@ export function useCollection() {
         throw new Error(message);
       }
     },
-    [write]
+    [writeContract]
   );
 
   return {

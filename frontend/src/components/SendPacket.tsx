@@ -22,7 +22,7 @@ export default function SendPacket() {
   const [duration, setDuration] = useState('60');
   const [password, setPassword] = useState('');
 
-  const { writeAsync, data: hash, isPending } = useContractWrite();
+  const { writeContractAsync, data: hash, isPending } = useContractWrite();
   const { isLoading: isConfirming, isSuccess, data: receipt } = useWaitForTransactionReceipt({ hash });
   const publicClient = usePublicClient();
 
@@ -77,7 +77,7 @@ export default function SendPacket() {
       return;
     }
     try {
-      await writeAsync({
+      await writeContractAsync({
         address: RED_PACKET_ADDRESS,
         abi: RED_PACKET_ABI,
         functionName: 'createRedPacket',

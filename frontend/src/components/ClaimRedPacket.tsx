@@ -17,15 +17,12 @@ export default function ClaimRedPacket() {
   const [password, setPassword] = useState('');
   const [payAmount, setPayAmount] = useState('');
   const [showSuccess, setShowSuccess] = useState(false);
-
-  // 超时状态
-  const [isTimeout, setIsTimeout] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const { write, data: hash, isPending, reset } = useContractWrite();
+  const { writeContract, data: hash, isPending } = useContractWrite();
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
     hash,
+    timeout: 60000, // 60秒超时
   });
 
   // 查询红包信息
@@ -46,42 +43,11 @@ export default function ClaimRedPacket() {
     query: { enabled: mode === 'collection' && !!id },
   });
 
-  // 监听 loading 状态，设置10秒超时
-  useEffect(() => {
-    if (isPending || isConfirming) {
-      // 清除之前的定时器
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-
-      // 设置10秒超时
-      timeoutRef.current = setTimeout(() => {
-        setIsTimeout(true);
-        setErrorMessage('交易超时，请检查网络连接或稍后重试');
-        reset(); // 重置交易状态
-      }, 10000);
-    } else {
-      // 清除定时器
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-        timeoutRef.current = null;
-      }
-      setIsTimeout(false);
-    }
-
-    return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-    };
-  }, [isPending, isConfirming, reset]);
-
   const handleClaimRedPacket = async (e: React.FormEvent) => {
     e.preventDefault();
 
     // 清除之前的错误信息
     setErrorMessage('');
-    setIsTimeout(false);
 
     if (!isConnected || !address) {
       setErrorMessage('请先连接钱包');
@@ -99,7 +65,7 @@ export default function ClaimRedPacket() {
     }
 
     try {
-      write({
+      writeContract({
         address: RED_PACKET_ADDRESS,
         abi: RED_PACKET_ABI,
         functionName: 'claimRedPacket',
@@ -116,7 +82,6 @@ export default function ClaimRedPacket() {
 
     // 清除之前的错误信息
     setErrorMessage('');
-    setIsTimeout(false);
 
     if (!isConnected || !address) {
       setErrorMessage('请先连接钱包');
@@ -139,7 +104,7 @@ export default function ClaimRedPacket() {
     }
 
     try {
-      write({
+      writeContract({
         address: RED_PACKET_ADDRESS,
         abi: RED_PACKET_ABI,
         functionName: 'payCollection',

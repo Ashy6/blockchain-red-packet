@@ -20,7 +20,7 @@ export default function CreateCollection() {
   const [password, setPassword] = useState('');
   const [hasSubmitted, setHasSubmitted] = useState(false);
 
-  const { write, data: hash, isPending, reset } = useContractWrite();
+  const { writeContract, data: hash, isPending, reset } = useContractWrite();
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
 
   const handleCreateCollection = async (e: React.FormEvent) => {
@@ -33,7 +33,7 @@ export default function CreateCollection() {
     try {
       setHasSubmitted(true);
       reset();
-      write({
+      writeContract({
         address: RED_PACKET_ADDRESS,
         abi: RED_PACKET_ABI,
         functionName: 'createCollection',
