@@ -7,7 +7,7 @@ import { useChainId } from 'wagmi';
 
 export default function ContractInfo() {
   const [copied, setCopied] = useState(false);
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(true);
   const chainId = useChainId();
   const networkName = chainId === 11155111 ? 'Sepolia' : chainId === 1 ? 'Mainnet' : chainId === 31337 ? 'Hardhat' : `Chain ${chainId ?? '未知'}`;
 
