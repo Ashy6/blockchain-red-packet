@@ -71,18 +71,22 @@ export default function SendRedPacket() {
   const handleCreateRedPacket = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // 清除之前的错误信息
+    setErrorMessage('');
+    setIsTimeout(false);
+
     if (!isConnected || !address) {
-      alert('请先连接钱包');
+      setErrorMessage('请先连接钱包');
       return;
     }
 
     if (!isSepolia) {
-      alert('请切换到 Sepolia 网络');
+      setErrorMessage('请切换到 Sepolia 网络');
       return;
     }
 
     if (!amount || !count || !password) {
-      alert('请填写所有必填字段');
+      setErrorMessage('请填写所有必填字段');
       return;
     }
 
@@ -101,30 +105,34 @@ export default function SendRedPacket() {
       });
     } catch (error) {
       console.error('创建红包失败:', error);
-      alert('创建红包失败');
+      setErrorMessage('创建红包失败: ' + (error as Error).message);
     }
   };
 
   const handleCreateCollection = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // 清除之前的错误信息
+    setErrorMessage('');
+    setIsTimeout(false);
+
     if (!isConnected || !address) {
-      alert('请先连接钱包');
+      setErrorMessage('请先连接钱包');
       return;
     }
 
     if (!isSepolia) {
-      alert('请切换到 Sepolia 网络');
+      setErrorMessage('请切换到 Sepolia 网络');
       return;
     }
 
     if (!targetAmount || !password) {
-      alert('请填写所有必填字段');
+      setErrorMessage('请填写所有必填字段');
       return;
     }
 
     if (collectionType === 'aa' && !targetCount) {
-      alert('AA模式需要填写目标人数');
+      setErrorMessage('AA模式需要填写目标人数');
       return;
     }
 
@@ -143,19 +151,23 @@ export default function SendRedPacket() {
       });
     } catch (error) {
       console.error('创建收款失败:', error);
-      alert('创建收款失败');
+      setErrorMessage('创建收款失败: ' + (error as Error).message);
     }
   };
 
-  if (isSuccess) {
-    setTimeout(() => {
-      setAmount('');
-      setCount('');
-      setPassword('');
-      setTargetAmount('');
-      setTargetCount('');
-    }, 2000);
-  }
+  // 成功后清空表单
+  useEffect(() => {
+    if (isSuccess) {
+      setErrorMessage('');
+      setTimeout(() => {
+        setAmount('');
+        setCount('');
+        setPassword('');
+        setTargetAmount('');
+        setTargetCount('');
+      }, 2000);
+    }
+  }, [isSuccess]);
 
   return (
     <div className="space-y-6">
@@ -173,6 +185,17 @@ export default function SendRedPacket() {
           </button>
         </div>
       )}
+
+      {/* 错误提示 */}
+      {errorMessage && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="flex items-center space-x-2">
+            <span className="text-red-600">⚠️</span>
+            <span className="text-sm text-red-800">{errorMessage}</span>
+          </div>
+        </div>
+      )}
+
       {/* 模式切换 */}
       <div className="flex space-x-4">
         <button

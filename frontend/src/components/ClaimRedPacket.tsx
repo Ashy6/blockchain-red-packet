@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAccount, useContractWrite, useWaitForTransactionReceipt, useContractRead, useChainId, useSwitchChain } from 'wagmi';
 import { parseEther } from 'viem';
 import { RED_PACKET_ADDRESS, RED_PACKET_ABI } from '@/constants/contracts';
@@ -18,7 +18,12 @@ export default function ClaimRedPacket() {
   const [payAmount, setPayAmount] = useState('');
   const [showSuccess, setShowSuccess] = useState(false);
 
-  const { write, data: hash, isPending } = useContractWrite();
+  // 超时状态
+  const [isTimeout, setIsTimeout] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const { write, data: hash, isPending, reset } = useContractWrite();
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
     hash,
   });
@@ -29,9 +34,7 @@ export default function ClaimRedPacket() {
     abi: RED_PACKET_ABI,
     functionName: 'getRedPacketInfo',
     args: id ? [BigInt(id)] : undefined,
-    query: {
-      enabled: mode === 'redpacket' && !!id,
-    },
+    enabled: mode === 'redpacket' && !!id,
   });
 
   // 查询收款信息
@@ -40,26 +43,58 @@ export default function ClaimRedPacket() {
     abi: RED_PACKET_ABI,
     functionName: 'getCollectionInfo',
     args: id ? [BigInt(id)] : undefined,
-    query: {
-      enabled: mode === 'collection' && !!id,
-    },
+    enabled: mode === 'collection' && !!id,
   });
+
+  // 监听 loading 状态，设置10秒超时
+  useEffect(() => {
+    if (isPending || isConfirming) {
+      // 清除之前的定时器
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+
+      // 设置10秒超时
+      timeoutRef.current = setTimeout(() => {
+        setIsTimeout(true);
+        setErrorMessage('交易超时，请检查网络连接或稍后重试');
+        reset(); // 重置交易状态
+      }, 10000);
+    } else {
+      // 清除定时器
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
+      setIsTimeout(false);
+    }
+
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, [isPending, isConfirming, reset]);
 
   const handleClaimRedPacket = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // 清除之前的错误信息
+    setErrorMessage('');
+    setIsTimeout(false);
+
     if (!isConnected || !address) {
-      alert('请先连接钱包');
+      setErrorMessage('请先连接钱包');
       return;
     }
 
     if (!isSepolia) {
-      alert('请切换到 Sepolia 网络');
+      setErrorMessage('请切换到 Sepolia 网络');
       return;
     }
 
     if (!id || !password) {
-      alert('请填写红包ID和口令');
+      setErrorMessage('请填写红包ID和口令');
       return;
     }
 
@@ -72,30 +107,34 @@ export default function ClaimRedPacket() {
       });
     } catch (error) {
       console.error('领取红包失败:', error);
-      alert('领取红包失败');
+      setErrorMessage('领取红包失败: ' + (error as Error).message);
     }
   };
 
   const handlePayCollection = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // 清除之前的错误信息
+    setErrorMessage('');
+    setIsTimeout(false);
+
     if (!isConnected || !address) {
-      alert('请先连接钱包');
+      setErrorMessage('请先连接钱包');
       return;
     }
 
     if (!isSepolia) {
-      alert('请切换到 Sepolia 网络');
+      setErrorMessage('请切换到 Sepolia 网络');
       return;
     }
 
     if (!id || !password) {
-      alert('请填写收款ID和口令');
+      setErrorMessage('请填写收款ID和口令');
       return;
     }
 
     if (!payAmount) {
-      alert('请填写支付金额');
+      setErrorMessage('请填写支付金额');
       return;
     }
 
@@ -109,19 +148,23 @@ export default function ClaimRedPacket() {
       });
     } catch (error) {
       console.error('支付失败:', error);
-      alert('支付失败');
+      setErrorMessage('支付失败: ' + (error as Error).message);
     }
   };
 
-  if (isSuccess && !showSuccess) {
-    setShowSuccess(true);
-    setTimeout(() => {
-      setShowSuccess(false);
-      setId('');
-      setPassword('');
-      setPayAmount('');
-    }, 3000);
-  }
+  // 成功后显示动画并清空表单
+  useEffect(() => {
+    if (isSuccess && !showSuccess) {
+      setErrorMessage('');
+      setShowSuccess(true);
+      setTimeout(() => {
+        setShowSuccess(false);
+        setId('');
+        setPassword('');
+        setPayAmount('');
+      }, 3000);
+    }
+  }, [isSuccess, showSuccess]);
 
   return (
     <div className="space-y-6">
@@ -139,6 +182,17 @@ export default function ClaimRedPacket() {
           </button>
         </div>
       )}
+
+      {/* 错误提示 */}
+      {errorMessage && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="flex items-center space-x-2">
+            <span className="text-red-600">⚠️</span>
+            <span className="text-sm text-red-800">{errorMessage}</span>
+          </div>
+        </div>
+      )}
+
       {/* 成功动画 */}
       <AnimatePresence>
         {showSuccess && (
