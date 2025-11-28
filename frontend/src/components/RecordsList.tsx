@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAccount, useContractRead, useChainId, useSwitchChain } from 'wagmi';
 import { RED_PACKET_ADDRESS, RED_PACKET_ABI } from '@/constants/contracts';
 import { motion } from 'framer-motion';
@@ -12,6 +12,33 @@ export default function RecordsList() {
   const { switchChain } = useSwitchChain();
   const isSepolia = chainId === 11155111;
   const [recordType, setRecordType] = useState<RecordType>('sent');
+  const [recentCreated, setRecentCreated] = useState<{
+    packetId: bigint;
+    password: string;
+    totalAmount: string;
+    totalCount: number;
+    remainingCount: number;
+    packetType: 'equal' | 'random';
+  } | null>(null);
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const ce = e as CustomEvent<{
+        packetId: bigint;
+        password: string;
+        totalAmount: string;
+        totalCount: number;
+        remainingCount: number;
+        packetType: 'equal' | 'random';
+      }>;
+      if (ce.detail) {
+        setRecentCreated(ce.detail);
+        setRecordType('sent');
+      }
+    };
+    window.addEventListener('redPacketCreated', handler as EventListener);
+    return () => window.removeEventListener('redPacketCreated', handler as EventListener);
+  }, []);
 
   // 查询用户发送的红包
   const { data: sentRedPackets } = useContractRead({
@@ -96,6 +123,33 @@ export default function RecordsList() {
 
       return (
         <div className="space-y-3">
+          {recentCreated && (
+            <motion.div
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg p-4 border border-green-100 hover:shadow-md transition-shadow"
+            >
+              <div className="flex items-start justify-between mb-2">
+                <div className="flex items-center space-x-2">
+                  <div className="text-2xl">🧧</div>
+                  <div>
+                    <div className="font-semibold text-gray-800">
+                      {recentCreated.packetType === 'equal' ? '等额' : '随机'}红包 #{recentCreated.packetId.toString()}
+                    </div>
+                    <div className="text-xs text-gray-500 mt-1">口令：{recentCreated.password || '（无）'}</div>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-sm font-medium text-green-600">
+                    - {Number(recentCreated.totalAmount).toFixed(4)} ETH
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    剩余：{recentCreated.remainingCount}/{recentCreated.totalCount}
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
           {/* 发送的红包 */}
           {sentRedPackets?.map((packetId, index) => (
             <RedPacketRecord key={`rp-${index}`} packetId={packetId} isSent />

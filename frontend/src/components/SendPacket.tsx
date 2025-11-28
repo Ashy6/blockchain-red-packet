@@ -2,8 +2,8 @@
  * 发送红包
  */
 import { useState, useEffect, useRef } from 'react';
-import { useAccount, useContractWrite, useWaitForTransactionReceipt, useChainId, useSwitchChain } from 'wagmi';
-import { parseEther } from 'viem';
+import { useAccount, useContractWrite, useWaitForTransactionReceipt, useChainId, useSwitchChain, usePublicClient } from 'wagmi';
+import { parseEther, decodeEventLog } from 'viem';
 import { RED_PACKET_ADDRESS, RED_PACKET_ABI } from '@/constants/contracts';
 import { motion } from 'framer-motion';
 import { Gift } from 'lucide-react';
@@ -23,12 +23,16 @@ export default function SendPacket() {
   const [password, setPassword] = useState('');
 
   const { writeAsync, data: hash, isPending } = useContractWrite();
-  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
+  const { isLoading: isConfirming, isSuccess, data: receipt } = useWaitForTransactionReceipt({ hash });
+  const publicClient = usePublicClient();
 
   const [isTimeout, setIsTimeout] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [hasSubmitted, setHasSubmitted] = useState(false);
+  const [createdInfo, setCreatedInfo] = useState<{
+    packetId: bigint;
+  } | null>(null);
 
   // 超时与错误处理：当交易等待超过 20 秒，提示用户重试或检查网络
   useEffect(() => {
@@ -93,13 +97,36 @@ export default function SendPacket() {
     }
   }, [isPending, isConfirming]);
 
-  if (isSuccess) {
-    setTimeout(() => {
-      setAmount('');
-      setCount('');
-      setPassword('');
-    }, 1500);
-  }
+  useEffect(() => {
+    if (!isSuccess || !receipt) return;
+    try {
+      for (const log of receipt.logs ?? []) {
+        try {
+          const decoded = decodeEventLog({ abi: RED_PACKET_ABI, data: log.data, topics: log.topics });
+          if (decoded.eventName === 'RedPacketCreated') {
+            const packetId = decoded.args.packetId as bigint;
+            setCreatedInfo({ packetId });
+            const detail = {
+              packetId: packetId,
+              password,
+              totalAmount: amount,
+              totalCount: Number(count || '0'),
+              remainingCount: Number(count || '0'),
+              packetType: packetType,
+            };
+            const evt = new CustomEvent('redPacketCreated', { detail });
+            window.dispatchEvent(evt);
+            setTimeout(() => {
+              setAmount('');
+              setCount('');
+              setPassword('');
+            }, 1500);
+            break;
+          }
+        } catch {}
+      }
+    } catch {}
+  }, [isSuccess, receipt]);
 
   return (
     <div className="space-y-6">
@@ -171,6 +198,13 @@ export default function SendPacket() {
         <button type="submit" disabled={isConfirming} className="w-full py-3 rounded-lg bg-primary-600 text-white font-semibold hover:bg-primary-700 transition disabled:opacity-60">
           {isPending ? '等待钱包确认...' : hasSubmitted && isConfirming ? '交易确认中...' : '发红包'}
         </button>
+        {createdInfo && (
+          <div className="mt-4 bg-green-50 border border-green-200 rounded-lg p-4">
+            <div className="text-sm text-green-800">
+              红包已创建：ID #{createdInfo.packetId.toString()}，口令：{password || '（无）'}
+            </div>
+          </div>
+        )}
       </motion.form>
     </div>
   );
