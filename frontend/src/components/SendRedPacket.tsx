@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useAccount, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
+import { useAccount, useContractWrite, useWaitForTransactionReceipt, useChainId, useSwitchChain } from 'wagmi';
 import { parseEther } from 'viem';
 import { RED_PACKET_ADDRESS, RED_PACKET_ABI } from '@/constants/contracts';
 import { motion } from 'framer-motion';
@@ -11,6 +11,9 @@ type CollectionType = 'aa' | 'crowdfund';
 
 export default function SendRedPacket() {
   const { address, isConnected } = useAccount();
+  const chainId = useChainId();
+  const { switchChain } = useSwitchChain();
+  const isSepolia = chainId === 11155111;
   const [mode, setMode] = useState<Mode>('redpacket');
 
   // 红包参数
@@ -25,7 +28,7 @@ export default function SendRedPacket() {
   const [targetAmount, setTargetAmount] = useState('');
   const [targetCount, setTargetCount] = useState('');
 
-  const { writeContract, data: hash, isPending } = useWriteContract();
+  const { write, data: hash, isPending } = useContractWrite();
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
     hash,
   });
@@ -38,13 +41,18 @@ export default function SendRedPacket() {
       return;
     }
 
+    if (!isSepolia) {
+      alert('请切换到 Sepolia 网络');
+      return;
+    }
+
     if (!amount || !count || !password) {
       alert('请填写所有必填字段');
       return;
     }
 
     try {
-      writeContract({
+      write({
         address: RED_PACKET_ADDRESS,
         abi: RED_PACKET_ABI,
         functionName: 'createRedPacket',
@@ -70,6 +78,11 @@ export default function SendRedPacket() {
       return;
     }
 
+    if (!isSepolia) {
+      alert('请切换到 Sepolia 网络');
+      return;
+    }
+
     if (!targetAmount || !password) {
       alert('请填写所有必填字段');
       return;
@@ -81,7 +94,7 @@ export default function SendRedPacket() {
     }
 
     try {
-      writeContract({
+      write({
         address: RED_PACKET_ADDRESS,
         abi: RED_PACKET_ABI,
         functionName: 'createCollection',
@@ -111,6 +124,20 @@ export default function SendRedPacket() {
 
   return (
     <div className="space-y-6">
+      {!isSepolia && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+          <div className="text-sm text-yellow-800">
+            当前网络非 Sepolia（Chain ID: {chainId ?? '未知'}）。请切换到 Sepolia 以进行交互。
+          </div>
+          <button
+            type="button"
+            onClick={() => switchChain({ chainId: 11155111 })}
+            className="mt-2 px-3 py-2 text-sm rounded-lg bg-yellow-600 text-white hover:bg-yellow-700"
+          >
+            一键切换到 Sepolia
+          </button>
+        </div>
+      )}
       {/* 模式切换 */}
       <div className="flex space-x-4">
         <button

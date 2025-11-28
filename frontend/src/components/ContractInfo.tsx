@@ -3,10 +3,13 @@ import { motion } from 'framer-motion';
 import { ExternalLink, Copy, Check, Shield } from 'lucide-react';
 import { RED_PACKET_ADDRESS } from '@/constants/contracts';
 import { copyToClipboard, getVerificationLink, getExplorerLink } from '@/utils/helpers';
+import { useChainId } from 'wagmi';
 
 export default function ContractInfo() {
   const [copied, setCopied] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+  const chainId = useChainId();
+  const networkName = chainId === 11155111 ? 'Sepolia' : chainId === 1 ? 'Mainnet' : chainId === 31337 ? 'Hardhat' : `Chain ${chainId ?? '未知'}`;
 
   const handleCopy = async () => {
     const success = await copyToClipboard(RED_PACKET_ADDRESS);
@@ -74,11 +77,11 @@ export default function ContractInfo() {
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
               <span className="text-gray-600">网络:</span>
-              <span className="ml-2 font-semibold">Sepolia</span>
+              <span className="ml-2 font-semibold">{networkName}</span>
             </div>
             <div>
               <span className="text-gray-600">Chain ID:</span>
-              <span className="ml-2 font-semibold">11155111</span>
+              <span className="ml-2 font-semibold">{chainId ?? '未知'}</span>
             </div>
           </div>
 

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useAccount, useReadContract } from 'wagmi';
+import { useAccount, useContractRead, useChainId, useSwitchChain } from 'wagmi';
 import { RED_PACKET_ADDRESS, RED_PACKET_ABI } from '@/constants/contracts';
 import { motion } from 'framer-motion';
 import { ArrowUpRight, ArrowDownRight, Clock } from 'lucide-react';
@@ -8,10 +8,13 @@ type RecordType = 'sent' | 'claimed';
 
 export default function RecordsList() {
   const { address, isConnected } = useAccount();
+  const chainId = useChainId();
+  const { switchChain } = useSwitchChain();
+  const isSepolia = chainId === 11155111;
   const [recordType, setRecordType] = useState<RecordType>('sent');
 
   // 查询用户发送的红包
-  const { data: sentRedPackets } = useReadContract({
+  const { data: sentRedPackets } = useContractRead({
     address: RED_PACKET_ADDRESS,
     abi: RED_PACKET_ABI,
     functionName: 'getUserSentRedPackets',
@@ -22,7 +25,7 @@ export default function RecordsList() {
   });
 
   // 查询用户领取的红包
-  const { data: claimedRedPackets } = useReadContract({
+  const { data: claimedRedPackets } = useContractRead({
     address: RED_PACKET_ADDRESS,
     abi: RED_PACKET_ABI,
     functionName: 'getUserClaimedRedPackets',
@@ -33,7 +36,7 @@ export default function RecordsList() {
   });
 
   // 查询用户创建的收款
-  const { data: createdCollections } = useReadContract({
+  const { data: createdCollections } = useContractRead({
     address: RED_PACKET_ADDRESS,
     abi: RED_PACKET_ABI,
     functionName: 'getUserCreatedCollections',
@@ -44,7 +47,7 @@ export default function RecordsList() {
   });
 
   // 查询用户参与的收款
-  const { data: paidCollections } = useReadContract({
+  const { data: paidCollections } = useContractRead({
     address: RED_PACKET_ADDRESS,
     abi: RED_PACKET_ABI,
     functionName: 'getUserPaidCollections',
@@ -59,6 +62,21 @@ export default function RecordsList() {
       return (
         <div className="text-center py-12 text-gray-500">
           <p>请先连接钱包</p>
+        </div>
+      );
+    }
+
+    if (!isSepolia) {
+      return (
+        <div className="text-center py-12 text-yellow-800 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <p>当前网络非 Sepolia（Chain ID: {chainId ?? '未知'}）。请切换到 Sepolia 查看记录。</p>
+          <button
+            type="button"
+            onClick={() => switchChain({ chainId: 11155111 })}
+            className="mt-3 px-3 py-2 text-sm rounded-lg bg-yellow-600 text-white hover:bg-yellow-700"
+          >
+            一键切换到 Sepolia
+          </button>
         </div>
       );
     }
@@ -174,7 +192,7 @@ function RedPacketRecord({
   packetId: bigint;
   isSent?: boolean;
 }) {
-  const { data: packetInfo } = useReadContract({
+  const { data: packetInfo } = useContractRead({
     address: RED_PACKET_ADDRESS,
     abi: RED_PACKET_ABI,
     functionName: 'getRedPacketInfo',
@@ -233,7 +251,7 @@ function CollectionRecord({
   collectionId: bigint;
   isCreator?: boolean;
 }) {
-  const { data: collectionInfo } = useReadContract({
+  const { data: collectionInfo } = useContractRead({
     address: RED_PACKET_ADDRESS,
     abi: RED_PACKET_ABI,
     functionName: 'getCollectionInfo',

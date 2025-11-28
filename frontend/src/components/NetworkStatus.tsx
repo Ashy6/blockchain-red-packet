@@ -1,14 +1,14 @@
-import { useAccount, useNetwork, useSwitchNetwork } from 'wagmi';
+import { useAccount, useChainId, useSwitchChain } from 'wagmi';
 import { sepolia } from 'wagmi/chains';
 import { AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function NetworkStatus() {
   const { isConnected } = useAccount();
-  const { chain } = useNetwork();
-  const { switchNetwork } = useSwitchNetwork();
+  const chainId = useChainId();
+  const { switchChain } = useSwitchChain();
 
-  const isWrongNetwork = isConnected && chain?.id !== sepolia.id;
+  const isWrongNetwork = isConnected && chainId !== sepolia.id;
 
   if (!isWrongNetwork) return null;
 
@@ -32,9 +32,9 @@ export default function NetworkStatus() {
               </p>
             </div>
           </div>
-          {switchNetwork && (
+          {switchChain && (
             <button
-              onClick={() => switchNetwork(sepolia.id)}
+              onClick={() => switchChain({ chainId: sepolia.id })}
               className="ml-4 px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white text-sm font-semibold rounded-lg transition-colors"
             >
               切换网络

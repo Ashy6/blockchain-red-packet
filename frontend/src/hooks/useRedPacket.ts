@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
+import { useContractRead, useContractWrite, useWaitForTransactionReceipt } from 'wagmi';
 import { parseEther } from 'viem';
 import { RED_PACKET_ADDRESS, RED_PACKET_ABI } from '@/constants/contracts';
 import { getFriendlyErrorMessage } from '@/utils/helpers';
@@ -8,10 +8,9 @@ import { getFriendlyErrorMessage } from '@/utils/helpers';
  * 红包操作的自定义 Hook
  */
 export function useRedPacket() {
-  const { address } = useAccount();
   const [error, setError] = useState<string | null>(null);
 
-  const { writeContract, data: hash, isPending } = useWriteContract();
+  const { write, data: hash, isPending } = useContractWrite();
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
     hash,
   });
@@ -29,7 +28,7 @@ export function useRedPacket() {
     ) => {
       setError(null);
       try {
-        writeContract({
+        write({
           address: RED_PACKET_ADDRESS,
           abi: RED_PACKET_ABI,
           functionName: 'createRedPacket',
@@ -42,7 +41,7 @@ export function useRedPacket() {
         throw new Error(message);
       }
     },
-    [writeContract]
+    [write]
   );
 
   /**
@@ -52,7 +51,7 @@ export function useRedPacket() {
     async (packetId: bigint, password: string) => {
       setError(null);
       try {
-        writeContract({
+        write({
           address: RED_PACKET_ADDRESS,
           abi: RED_PACKET_ABI,
           functionName: 'claimRedPacket',
@@ -64,7 +63,7 @@ export function useRedPacket() {
         throw new Error(message);
       }
     },
-    [writeContract]
+    [write]
   );
 
   /**
@@ -74,7 +73,7 @@ export function useRedPacket() {
     async (packetId: bigint) => {
       setError(null);
       try {
-        writeContract({
+        write({
           address: RED_PACKET_ADDRESS,
           abi: RED_PACKET_ABI,
           functionName: 'refundExpiredRedPacket',
@@ -86,7 +85,7 @@ export function useRedPacket() {
         throw new Error(message);
       }
     },
-    [writeContract]
+    [write]
   );
 
   return {
@@ -105,10 +104,9 @@ export function useRedPacket() {
  * 收款操作的自定义 Hook
  */
 export function useCollection() {
-  const { address } = useAccount();
   const [error, setError] = useState<string | null>(null);
 
-  const { writeContract, data: hash, isPending } = useWriteContract();
+  const { write, data: hash, isPending } = useContractWrite();
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
     hash,
   });
@@ -126,7 +124,7 @@ export function useCollection() {
     ) => {
       setError(null);
       try {
-        writeContract({
+        write({
           address: RED_PACKET_ADDRESS,
           abi: RED_PACKET_ABI,
           functionName: 'createCollection',
@@ -144,7 +142,7 @@ export function useCollection() {
         throw new Error(message);
       }
     },
-    [writeContract]
+    [write]
   );
 
   /**
@@ -154,7 +152,7 @@ export function useCollection() {
     async (collectionId: bigint, password: string, amount: string) => {
       setError(null);
       try {
-        writeContract({
+        write({
           address: RED_PACKET_ADDRESS,
           abi: RED_PACKET_ABI,
           functionName: 'payCollection',
@@ -167,7 +165,7 @@ export function useCollection() {
         throw new Error(message);
       }
     },
-    [writeContract]
+    [write]
   );
 
   /**
@@ -177,7 +175,7 @@ export function useCollection() {
     async (collectionId: bigint) => {
       setError(null);
       try {
-        writeContract({
+        write({
           address: RED_PACKET_ADDRESS,
           abi: RED_PACKET_ABI,
           functionName: 'handleExpiredCollection',
@@ -189,7 +187,7 @@ export function useCollection() {
         throw new Error(message);
       }
     },
-    [writeContract]
+    [write]
   );
 
   return {
@@ -208,7 +206,7 @@ export function useCollection() {
  * 查询红包信息的 Hook
  */
 export function useRedPacketInfo(packetId: bigint | undefined) {
-  const { data, isLoading, isError, refetch } = useReadContract({
+  const { data, isLoading, isError, refetch } = useContractRead({
     address: RED_PACKET_ADDRESS,
     abi: RED_PACKET_ABI,
     functionName: 'getRedPacketInfo',
@@ -230,7 +228,7 @@ export function useRedPacketInfo(packetId: bigint | undefined) {
  * 查询收款信息的 Hook
  */
 export function useCollectionInfo(collectionId: bigint | undefined) {
-  const { data, isLoading, isError, refetch } = useReadContract({
+  const { data, isLoading, isError, refetch } = useContractRead({
     address: RED_PACKET_ADDRESS,
     abi: RED_PACKET_ABI,
     functionName: 'getCollectionInfo',
@@ -253,7 +251,7 @@ export function useCollectionInfo(collectionId: bigint | undefined) {
  */
 export function useUserStats(userAddress: `0x${string}` | undefined) {
   // 查询发送的红包
-  const { data: sentRedPackets } = useReadContract({
+  const { data: sentRedPackets } = useContractRead({
     address: RED_PACKET_ADDRESS,
     abi: RED_PACKET_ABI,
     functionName: 'getUserSentRedPackets',
@@ -264,7 +262,7 @@ export function useUserStats(userAddress: `0x${string}` | undefined) {
   });
 
   // 查询领取的红包
-  const { data: claimedRedPackets } = useReadContract({
+  const { data: claimedRedPackets } = useContractRead({
     address: RED_PACKET_ADDRESS,
     abi: RED_PACKET_ABI,
     functionName: 'getUserClaimedRedPackets',
@@ -275,7 +273,7 @@ export function useUserStats(userAddress: `0x${string}` | undefined) {
   });
 
   // 查询创建的收款
-  const { data: createdCollections } = useReadContract({
+  const { data: createdCollections } = useContractRead({
     address: RED_PACKET_ADDRESS,
     abi: RED_PACKET_ABI,
     functionName: 'getUserCreatedCollections',
@@ -286,7 +284,7 @@ export function useUserStats(userAddress: `0x${string}` | undefined) {
   });
 
   // 查询参与的收款
-  const { data: paidCollections } = useReadContract({
+  const { data: paidCollections } = useContractRead({
     address: RED_PACKET_ADDRESS,
     abi: RED_PACKET_ABI,
     functionName: 'getUserPaidCollections',

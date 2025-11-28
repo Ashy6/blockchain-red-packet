@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useAccount, useWriteContract, useWaitForTransactionReceipt, useReadContract } from 'wagmi';
+import { useAccount, useContractWrite, useWaitForTransactionReceipt, useContractRead, useChainId, useSwitchChain } from 'wagmi';
 import { parseEther } from 'viem';
 import { RED_PACKET_ADDRESS, RED_PACKET_ABI } from '@/constants/contracts';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -9,19 +9,22 @@ type ClaimMode = 'redpacket' | 'collection';
 
 export default function ClaimRedPacket() {
   const { address, isConnected } = useAccount();
+  const chainId = useChainId();
+  const { switchChain } = useSwitchChain();
+  const isSepolia = chainId === 11155111;
   const [mode, setMode] = useState<ClaimMode>('redpacket');
   const [id, setId] = useState('');
   const [password, setPassword] = useState('');
   const [payAmount, setPayAmount] = useState('');
   const [showSuccess, setShowSuccess] = useState(false);
 
-  const { writeContract, data: hash, isPending } = useWriteContract();
+  const { write, data: hash, isPending } = useContractWrite();
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
     hash,
   });
 
   // 查询红包信息
-  const { data: redPacketInfo } = useReadContract({
+  const { data: redPacketInfo } = useContractRead({
     address: RED_PACKET_ADDRESS,
     abi: RED_PACKET_ABI,
     functionName: 'getRedPacketInfo',
@@ -32,7 +35,7 @@ export default function ClaimRedPacket() {
   });
 
   // 查询收款信息
-  const { data: collectionInfo } = useReadContract({
+  const { data: collectionInfo } = useContractRead({
     address: RED_PACKET_ADDRESS,
     abi: RED_PACKET_ABI,
     functionName: 'getCollectionInfo',
@@ -50,13 +53,18 @@ export default function ClaimRedPacket() {
       return;
     }
 
+    if (!isSepolia) {
+      alert('请切换到 Sepolia 网络');
+      return;
+    }
+
     if (!id || !password) {
       alert('请填写红包ID和口令');
       return;
     }
 
     try {
-      writeContract({
+      write({
         address: RED_PACKET_ADDRESS,
         abi: RED_PACKET_ABI,
         functionName: 'claimRedPacket',
@@ -76,6 +84,11 @@ export default function ClaimRedPacket() {
       return;
     }
 
+    if (!isSepolia) {
+      alert('请切换到 Sepolia 网络');
+      return;
+    }
+
     if (!id || !password) {
       alert('请填写收款ID和口令');
       return;
@@ -87,7 +100,7 @@ export default function ClaimRedPacket() {
     }
 
     try {
-      writeContract({
+      write({
         address: RED_PACKET_ADDRESS,
         abi: RED_PACKET_ABI,
         functionName: 'payCollection',
@@ -112,6 +125,20 @@ export default function ClaimRedPacket() {
 
   return (
     <div className="space-y-6">
+      {!isSepolia && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+          <div className="text-sm text-yellow-800">
+            当前网络非 Sepolia（Chain ID: {chainId ?? '未知'}）。请切换到 Sepolia 以进行交互。
+          </div>
+          <button
+            type="button"
+            onClick={() => switchChain({ chainId: 11155111 })}
+            className="mt-2 px-3 py-2 text-sm rounded-lg bg-yellow-600 text-white hover:bg-yellow-700"
+          >
+            一键切换到 Sepolia
+          </button>
+        </div>
+      )}
       {/* 成功动画 */}
       <AnimatePresence>
         {showSuccess && (
@@ -144,21 +171,19 @@ export default function ClaimRedPacket() {
       <div className="flex space-x-4">
         <button
           onClick={() => setMode('redpacket')}
-          className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-all ${
-            mode === 'redpacket'
+          className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-all ${mode === 'redpacket'
               ? 'bg-primary-600 text-white shadow-lg'
               : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-          }`}
+            }`}
         >
           领红包 🎁
         </button>
         <button
           onClick={() => setMode('collection')}
-          className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-all ${
-            mode === 'collection'
+          className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-all ${mode === 'collection'
               ? 'bg-primary-600 text-white shadow-lg'
               : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-          }`}
+            }`}
         >
           参与收款 💳
         </button>
@@ -213,8 +238,8 @@ export default function ClaimRedPacket() {
                     {redPacketInfo[7] === 0
                       ? '🟢 进行中'
                       : redPacketInfo[7] === 1
-                      ? '🔴 已过期'
-                      : '✅ 已领完'}
+                        ? '🔴 已过期'
+                        : '✅ 已领完'}
                   </span>
                 </div>
                 <div>
@@ -308,8 +333,8 @@ export default function ClaimRedPacket() {
                     {collectionInfo[7] === 0
                       ? '🟢 进行中'
                       : collectionInfo[7] === 1
-                      ? '🔴 已过期'
-                      : '✅ 已完成'}
+                        ? '🔴 已过期'
+                        : '✅ 已完成'}
                   </span>
                 </div>
                 <div>

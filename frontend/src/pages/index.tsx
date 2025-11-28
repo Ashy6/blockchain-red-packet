@@ -1,12 +1,15 @@
 import { useState } from 'react';
 import Head from 'next/head';
-import Header from '@/components/Header';
-import SendRedPacket from '@/components/SendRedPacket';
-import ClaimRedPacket from '@/components/ClaimRedPacket';
-import RecordsList from '@/components/RecordsList';
-import NetworkStatus from '@/components/NetworkStatus';
+// import Header from '@/components/Header';
+import dynamic from 'next/dynamic';
 import ContractInfo from '@/components/ContractInfo';
 import { motion } from 'framer-motion';
+// 动态禁用 SSR 渲染使用 wagmi 的组件，避免 SSR 环境下报错
+const HeaderClient = dynamic(() => import('@/components/Header'), { ssr: false });
+const DynamicNetworkStatus = dynamic(() => import('@/components/NetworkStatus'), { ssr: false });
+const SendRedPacketClient = dynamic(() => import('@/components/SendRedPacket'), { ssr: false });
+const ClaimRedPacketClient = dynamic(() => import('@/components/ClaimRedPacket'), { ssr: false });
+const RecordsListClient = dynamic(() => import('@/components/RecordsList'), { ssr: false });
 
 type TabType = 'send' | 'claim';
 
@@ -23,10 +26,10 @@ export default function Home() {
       </Head>
 
       <div className="min-h-screen">
-        <Header />
+        <HeaderClient />
 
         {/* 网络状态提示 */}
-        <NetworkStatus />
+        <DynamicNetworkStatus />
 
         <main className="container mx-auto px-4 py-8">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -65,9 +68,9 @@ export default function Home() {
                 {/* Tab 内容 */}
                 <div className="p-6">
                   {activeTab === 'send' ? (
-                    <SendRedPacket />
+                    <SendRedPacketClient />
                   ) : (
-                    <ClaimRedPacket />
+                    <ClaimRedPacketClient />
                   )}
                 </div>
               </motion.div>
@@ -75,7 +78,7 @@ export default function Home() {
 
             {/* 右侧：记录列表和合约信息 */}
             <div className="lg:col-span-1 space-y-6">
-              <RecordsList />
+              <RecordsListClient />
               <ContractInfo />
             </div>
           </div>
